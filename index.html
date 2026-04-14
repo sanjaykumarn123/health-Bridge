@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Bridge Federated Architecture — Dual-Tone</title>
+  <meta name="description"
+    content="Multi-region EHR integration architecture with AI agents, consent gating, and cross-region routing">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset & Base ─── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F1F5F9;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ─── Dark Header Band ─── */
+    .header-band {
+      background: linear-gradient(135deg, #0B1F3A 0%, #132F5E 100%);
+      padding: 1.1rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: 0 2px 16px rgba(11, 31, 58, 0.22);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-band::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3B82F6, #22C55E, #F59E0B, #64748B);
+      opacity: 0.6;
+    }
+
+    .header-left h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.2rem;
+    }
+
+    .header-left p {
+      font-size: 12px;
+      color: #94A3B8;
+      font-weight: 400;
+    }
+
+    /* ─── Legend (inside header) ─── */
+    .legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 11px;
+      font-weight: 500;
+      color: #CBD5E1;
+    }
+
+    .legend-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      border: 1.5px solid;
+    }
+
+    .swatch-green {
+      background: #DCFCE7;
+      border-color: #22C55E;
+    }
+
+    .swatch-orange {
+      background: #FFEDD5;
+      border-color: #F59E0B;
+    }
+
+    .swatch-blue {
+      background: #DBEAFE;
+      border-color: #3B82F6;
+    }
+
+    .swatch-grey {
+      background: #E5E7EB;
+      border-color: #64748B;
+    }
+
+    /* ─── Main Canvas ─── */
+    .main-canvas {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      max-width: 1180px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .arch-root {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ─── Tier Labels ─── */
+    .tier-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      padding-left: 2px;
+    }
+
+    /* ─── Region Cards ─── */
+    .region-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .region-box {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .region-box:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .region-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.1rem;
+    }
+
+    /* ─── Component Boxes ─── */
+    .box {
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      text-align: center;
+      border: 1px solid;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .box:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .box-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .box-sub {
+      font-size: 10.5px;
+      font-weight: 400;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    /* ─── Color Variants (Light fills for light canvas) ─── */
+
+    /* Hospital Clients — Green */
+    .green {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+    }
+
+    .green .box-title {
+      color: #166534;
+    }
+
+    .green .box-sub {
+      color: #15803D;
+    }
+
+    /* FHIR / Consent — Orange (Highlighted) */
+    .orange {
+      background: #FFEDD5;
+      border-color: #FDBA74;
+    }
+
+    .orange .box-title {
+      color: #9A3412;
+    }
+
+    .orange .box-sub {
+      color: #C2410C;
+    }
+
+    /* Highlighted variant — FHIR Normalization & Consent Engine */
+    .orange.highlight {
+      border-width: 2px;
+      border-color: #EA580C;
+      box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.10), 0 2px 8px rgba(234, 88, 12, 0.08);
+    }
+
+    /* Agents — Blue */
+    .blue {
+      background: #DBEAFE;
+      border-color: #93C5FD;
+    }
+
+    .blue .box-title {
+      color: #1E3A8A;
+    }
+
+    .blue .box-sub {
+      color: #1D4ED8;
+    }
+
+    /* Data / Infra — Grey */
+    .grey {
+      background: #F3F4F6;
+      border-color: #D1D5DB;
+    }
+
+    .grey .box-title {
+      color: #374151;
+    }
+
+    .grey .box-sub {
+      color: #6B7280;
+    }
+
+    /* ─── Grid Rows ─── */
+    .box-row {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .box-row-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .box-row-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    /* ─── Arrows ─── */
+    .down-arrow-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.1rem 0;
+      gap: 0;
+    }
+
+    .down-arrow-center .arrow-shaft {
+      width: 1.5px;
+      height: 14px;
+      background: linear-gradient(to bottom, #94A3B8, #64748B);
+      border-radius: 1px;
+    }
+
+    .down-arrow-center .arrow-tip {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #64748B;
+    }
+
+    /* ─── Horizontal Section Divider ─── */
+    .arrow-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0.15rem 0;
+    }
+
+    .arrow-label::before,
+    .arrow-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #CBD5E1, transparent);
+    }
+
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 0.15rem 0;
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #CBD5E1, transparent);
+    }
+
+    /* ─── Central Router ─── */
+    .central-block {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+    }
+
+    .central-inner {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ─── Full-width Rows ─── */
+    .full-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .full-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .full-row-5 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    /* ─── Tunnel Label ─── */
+    .tunnel-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748B;
+      text-align: center;
+      padding: 0.3rem 0;
+      border-top: 1px dashed #CBD5E1;
+      border-bottom: 1px dashed #CBD5E1;
+      margin: 0.1rem 0;
+      letter-spacing: 0.04em;
+    }
+
+    /* ─── ID Tags ─── */
+    .id-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      text-align: center;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid;
+      letter-spacing: 0.02em;
+    }
+
+    .id-green {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+      color: #166534;
+    }
+
+    .id-blue {
+      background: #DBEAFE;
+      border-color: #93C5FD;
+      color: #1E3A8A;
+    }
+
+    /* ─── Security Block ─── */
+    .security-block {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+    }
+
+    .security-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .security-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .security-item {
+      font-size: 10.5px;
+      color: #475569;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .security-item:hover {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #1E3A8A;
+    }
+
+    /* ─── Cross-region flow ─── */
+    .flow-row {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .flow-row .box {
+      flex: 1;
+      min-width: 85px;
+    }
+
+    .flow-arrow {
+      color: #64748B;
+      font-size: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      padding: 0 1px;
+    }
+
+    .flow-note {
+      font-size: 10.5px;
+      color: #64748B;
+      margin-top: 0.4rem;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* ─── Bold emphasis for semi-bold contexts ─── */
+    .tier-label strong,
+    .box-title strong,
+    .section-divider strong,
+    .arrow-label strong {
+      font-weight: 800;
+    }
+
+    /* ─── Smooth entrance animations ─── */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header-band {
+      animation: fadeSlideUp 0.35s ease forwards;
+    }
+
+    .arch-root>* {
+      animation: fadeSlideUp 0.4s ease forwards;
+      opacity: 0;
+    }
+
+    .arch-root>*:nth-child(1) {
+      animation-delay: 0.06s;
+    }
+
+    .arch-root>*:nth-child(2) {
+      animation-delay: 0.12s;
+    }
+
+    .arch-root>*:nth-child(3) {
+      animation-delay: 0.18s;
+    }
+
+    .arch-root>*:nth-child(4) {
+      animation-delay: 0.22s;
+    }
+
+    .arch-root>*:nth-child(5) {
+      animation-delay: 0.26s;
+    }
+
+    .arch-root>*:nth-child(6) {
+      animation-delay: 0.30s;
+    }
+
+    .arch-root>*:nth-child(7) {
+      animation-delay: 0.34s;
+    }
+
+    .arch-root>*:nth-child(8) {
+      animation-delay: 0.38s;
+    }
+
+    .arch-root>*:nth-child(9) {
+      animation-delay: 0.42s;
+    }
+
+    .arch-root>*:nth-child(10) {
+      animation-delay: 0.46s;
+    }
+
+    .arch-root>*:nth-child(11) {
+      animation-delay: 0.50s;
+    }
+
+    .arch-root>*:nth-child(12) {
+      animation-delay: 0.54s;
+    }
+
+    /* ─── Responsive 16:9 fit ─── */
+    @media (max-width: 900px) {
+      .region-row {
+        grid-template-columns: 1fr;
+      }
+
+      .header-band {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .full-row-5 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════ DARK HEADER BAND ═══════════════ -->
+  <div class="header-band">
+    <div class="header-left">
+      <h1>Health Bridge Federated Architecture</h1>
+      <p>Multi-region <strong>EHR</strong> integration with <strong>AI agents</strong>, <strong>consent gating</strong>,
+        and <strong>cross-region routing</strong></p>
+    </div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch swatch-green"></div>Hospital Clients
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch swatch-orange"></div>Format Adapter / Consent
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch swatch-blue"></div>Agents / Router
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch swatch-grey"></div>Data / Infrastructure
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ LIGHT MAIN CANVAS ═══════════════ -->
+  <div class="main-canvas">
+    <div class="arch-root">
+
+      <!-- ─── TIER 1 — Hospital Edge ─── -->
+      <div>
+        <div class="tier-label"><strong>Tier 1</strong> — Hospital Edge</div>
+        <div class="region-row">
+
+          <!-- Region A -->
+          <div class="region-box">
+            <div class="region-title">Region A &mdash; New England</div>
+            <div class="box-row box-row-2">
+              <div class="box green">
+                <div class="box-title">Hospital A1</div>
+                <div class="box-sub"><strong>Epic EHR</strong> · <strong>HL7 v2</strong></div>
+              </div>
+              <div class="box green">
+                <div class="box-title">Hospital A2</div>
+                <div class="box-sub"><strong>Cerner</strong> · CSV / JSON</div>
+              </div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box orange highlight">
+              <div class="box-title"><strong>FHIR Normalization Layer</strong> (Region A)</div>
+              <div class="box-sub">p_name · field-map · <strong>FHIR R4</strong></div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box blue">
+              <div class="box-title">Agent 1 — <strong>Ingestion Agent</strong></div>
+              <div class="box-sub"><strong>LangChain</strong> · <strong>AWS Bedrock Claude</strong></div>
+            </div>
+          </div>
+
+          <!-- Region B -->
+          <div class="region-box">
+            <div class="region-title">Region B &mdash; Southeast</div>
+            <div class="box-row box-row-2">
+              <div class="box green">
+                <div class="box-title">Hospital B1</div>
+                <div class="box-sub"><strong>Athenahealth</strong> · PDF</div>
+              </div>
+              <div class="box green">
+                <div class="box-title">Hospital B2</div>
+                <div class="box-sub"><strong>OpenMRS</strong> · CSV</div>
+              </div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box orange highlight">
+              <div class="box-title"><strong>FHIR Normalization Layer</strong> (Region B)</div>
+              <div class="box-sub">p_name · field-map · <strong>FHIR R4</strong></div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box blue">
+              <div class="box-title">Agent 1 — <strong>Ingestion Agent</strong></div>
+              <div class="box-sub"><strong>LangChain</strong> · <strong>AWS Bedrock Claude</strong></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Arrow: FHIR R4 -->
+      <div class="arrow-label"><strong>FHIR R4</strong> → Regional Servers</div>
+
+      <!-- ─── TIER 2 — Regional Server ─── -->
+      <div>
+        <div class="tier-label"><strong>Tier 2</strong> — Regional Server · <strong>AWS ECS Fargate</strong> ·
+          <strong>MongoDB</strong></div>
+        <div class="region-row">
+
+          <!-- Regional Server A -->
+          <div class="region-box">
+            <div class="region-title">Regional Server A</div>
+            <div class="box grey">
+              <div class="box-title">Agent 2 — <strong>Deduplication</strong></div>
+              <div class="box-sub"><strong>LangGraph</strong> stateful · <strong>PPRL</strong> · <strong>MPI</strong> ·
+                SSN hash match</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box orange highlight">
+              <div class="box-title"><strong>Consent Engine</strong> (Domain Layer)</div>
+              <div class="box-sub">Rule-based gate · <strong>FHIR consent</strong> · <strong>Policy PDP</strong> ·
+                <strong>Break-glass</strong> handler</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box-row box-row-2">
+              <div class="box blue">
+                <div class="box-title">Agent 3</div>
+                <div class="box-sub"><strong>Prior-auth</strong> · <strong>LangGraph</strong> + <strong>AWS
+                    Strand</strong></div>
+              </div>
+              <div class="box blue">
+                <div class="box-title">Agent 4</div>
+                <div class="box-sub"><strong>Emergency summary</strong> · consent clarity</div>
+              </div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box grey">
+              <div class="box-title"><strong>Data + Audit Layer</strong></div>
+              <div class="box-sub"><strong>MongoDB</strong> FHIR store · <strong>AWS CloudWatch</strong> ·
+                <strong>NPI</strong> verify</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="id-tag id-green">Patient ID prefix: A-XXXXXXXX</div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box grey">
+              <div class="box-title"><strong>Deduplication Engine</strong></div>
+              <div class="box-sub"><strong>PPRL</strong> · <strong>MPI</strong> · SSN hash match</div>
+            </div>
+          </div>
+
+          <!-- Regional Server B -->
+          <div class="region-box">
+            <div class="region-title">Regional Server B</div>
+            <div class="box grey">
+              <div class="box-title">Agent 2 — <strong>Deduplication</strong></div>
+              <div class="box-sub"><strong>LangGraph</strong> stateful · <strong>PPRL</strong> · <strong>MPI</strong> ·
+                SSN hash match</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box orange highlight">
+              <div class="box-title"><strong>Consent Engine</strong> (Domain Layer)</div>
+              <div class="box-sub">Rule-based gate · <strong>FHIR consent</strong> · <strong>Policy PDP</strong> ·
+                <strong>Break-glass</strong> handler</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box-row box-row-2">
+              <div class="box blue">
+                <div class="box-title">Agent 3</div>
+                <div class="box-sub"><strong>Prior-auth</strong> · <strong>LangGraph</strong> + <strong>AWS
+                    Strand</strong></div>
+              </div>
+              <div class="box blue">
+                <div class="box-title">Agent 4</div>
+                <div class="box-sub"><strong>Emergency summary</strong> · consent clarity</div>
+              </div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box grey">
+              <div class="box-title"><strong>Data + Audit Layer</strong></div>
+              <div class="box-sub"><strong>MongoDB</strong> FHIR store · <strong>AWS CloudWatch</strong> ·
+                <strong>NPI</strong> verify</div>
+            </div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="id-tag id-blue">Patient ID prefix: B-XXXXXXXX</div>
+            <div class="down-arrow-center">
+              <div class="arrow-shaft"></div>
+              <div class="arrow-tip"></div>
+            </div>
+            <div class="box grey">
+              <div class="box-title"><strong>Deduplication Engine</strong></div>
+              <div class="box-sub"><strong>PPRL</strong> · <strong>MPI</strong> · SSN hash match</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tunnel -->
+      <div class="tunnel-label">Secure <strong>TLS</strong> tunnel (<strong>mTLS</strong>)</div>
+
+      <!-- ─── TIER 3 — Central Router ─── -->
+      <div>
+        <div class="tier-label"><strong>Tier 3</strong> — <strong>Central Router</strong> · Active-Active Redundancy
+        </div>
+        <div class="central-block">
+          <div class="central-inner">
+            <div class="box blue" style="margin-bottom: 0.75rem;">
+              <div class="box-title"><strong>Central Router</strong></div>
+              <div class="box-sub">Region code inference · cross-region <strong>session broker</strong></div>
+            </div>
+            <div class="box-row box-row-3">
+              <div class="box grey">
+                <div class="box-title">ID Parsing</div>
+                <div class="box-sub">A-20240615-001 → Region A</div>
+              </div>
+              <div class="box grey">
+                <div class="box-title">Auth + <strong>NPI</strong> Check</div>
+                <div class="box-sub">Verify requester before routing</div>
+              </div>
+              <div class="box grey">
+                <div class="box-title"><strong>Session Broker</strong></div>
+                <div class="box-sub"><strong>mTLS</strong> tunnel A ↔ B</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cross-region flow -->
+      <div>
+        <div class="section-divider">Cross-region request flow — patient admitted in B, records in A</div>
+        <div class="flow-row">
+          <div class="box green">
+            <div class="box-title">Hospital B</div>
+            <div class="box-sub">Sends A-XXXX ID</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="box blue">
+            <div class="box-title">Router</div>
+            <div class="box-sub">Reads "A" prefix</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="box orange">
+            <div class="box-title">Auth + <strong>Consent</strong></div>
+            <div class="box-sub"><strong>NPI</strong> + grant</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="box grey">
+            <div class="box-title">Region A Server</div>
+            <div class="box-sub">Returns <strong>FHIR</strong> bundle</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="box green">
+            <div class="box-title">Hospital B</div>
+            <div class="box-sub">Receives data</div>
+          </div>
+        </div>
+        <div class="flow-note">Router never stores data — brokers the secure connection only</div>
+      </div>
+
+      <!-- Layer 0 — Portals -->
+      <div>
+        <div class="tier-label"><strong>Layer 0</strong> — Portals · <strong>Angular</strong> · <strong>AWS S3</strong>
+          · <strong>CloudFront</strong> · <strong>Cognito</strong></div>
+        <div class="box-row box-row-3">
+          <div class="box green">
+            <div class="box-title">Patient Portal</div>
+            <div class="box-sub">Grant / revoke <strong>consent</strong> · AI summary of own records</div>
+          </div>
+          <div class="box orange">
+            <div class="box-title">Hospital Portal</div>
+            <div class="box-sub">Doctor · nurse · lab views · <strong>NPI</strong>-verified access</div>
+          </div>
+          <div class="box orange">
+            <div class="box-title">Payer Portal</div>
+            <div class="box-sub"><strong>Prior-auth</strong> decision panel · explicit <strong>consent</strong> required
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Orchestration -->
+      <div>
+        <div class="section-divider"><strong>LangGraph</strong> Agent Orchestration — <strong>AWS Strand</strong>
+          Integration</div>
+        <div class="full-row-5" style="margin-top: 0.5rem;">
+          <div class="box grey">
+            <div class="box-title">Ingestion</div>
+            <div class="box-sub">Hospital edge → data conversion → dedup agent</div>
+          </div>
+          <div class="box grey">
+            <div class="box-title">Dedup</div>
+            <div class="box-sub"><strong>MPI</strong> match · uncertain → human-in-loop</div>
+          </div>
+          <div class="box orange highlight">
+            <div class="box-title"><strong>Consent Gate</strong></div>
+            <div class="box-sub">Mandatory · cannot be skipped · full audit on pass</div>
+          </div>
+          <div class="box blue">
+            <div class="box-title"><strong>Prior-Auth</strong></div>
+            <div class="box-sub">Triggered on payer claim · policy decides</div>
+          </div>
+          <div class="box blue">
+            <div class="box-title">Emergency</div>
+            <div class="box-sub"><strong>Break-glass</strong> trigger · history · drug interactions</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security + Compliance -->
+      <div class="security-block">
+        <div class="security-title">Security + Compliance</div>
+        <div class="security-items">
+          <div class="security-item"><strong>AWS Bedrock</strong> — patient data never trains base model</div>
+          <div class="security-item"><strong>AES-256</strong> in transit and at rest</div>
+          <div class="security-item"><strong>HIPAA BAA</strong> on all AWS services</div>
+          <div class="security-item"><strong>Private VPC</strong></div>
+          <div class="security-item"><strong>mTLS</strong> inter-service</div>
+          <div class="security-item">Provenance-based 7-year <strong>audit log</strong></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+
+</html>
