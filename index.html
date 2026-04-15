@@ -1,625 +1,1681 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Healthcare Interoperability — Federated Architecture</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Health Bridge — Federated Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #F1F5F9;
-      color: #0F172A;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #FFFFFF;
+      color: #111827;
       -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
     }
 
-    /* ─── Header ─── */
-    .header-band {
-      background: linear-gradient(135deg, #0B1F3A 0%, #132F5E 100%);
-      padding: 1.1rem 2.5rem;
+    /* ── Header ── */
+    .hdr {
+      background: #0F172A;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 1rem;
-      box-shadow: 0 2px 16px rgba(11,31,58,0.22);
+      gap: 12px;
+      flex-shrink: 0;
       position: relative;
-      z-index: 10;
-      animation: fadeSlideUp 0.35s ease forwards;
     }
-    .header-band::after {
+
+    .hdr::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #3B82F6, #22C55E, #F59E0B, #64748B);
-      opacity: 0.6;
-    }
-    .header-left h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.01em; margin-bottom: 0.2rem; }
-    .header-left p { font-size: 12px; color: #94A3B8; font-weight: 400; }
-
-    /* ─── Legend ─── */
-    .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 11px; font-weight: 500; color: #CBD5E1; }
-    .legend-swatch { width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid; }
-    .swatch-green  { background: #DCFCE7; border-color: #22C55E; }
-    .swatch-orange { background: #FFEDD5; border-color: #F59E0B; }
-    .swatch-blue   { background: #DBEAFE; border-color: #3B82F6; }
-    .swatch-grey   { background: #E5E7EB; border-color: #64748B; }
-
-    /* ─── Canvas ─── */
-    .main-canvas { flex: 1; padding: 1.5rem 2rem; max-width: 1180px; margin: 0 auto; width: 100%; }
-    .arch-root { display: flex; flex-direction: column; gap: 1.25rem; }
-    .arch-root > * { animation: fadeSlideUp 0.4s ease forwards; opacity: 0; }
-    .arch-root > *:nth-child(1)  { animation-delay: 0.06s; }
-    .arch-root > *:nth-child(2)  { animation-delay: 0.12s; }
-    .arch-root > *:nth-child(3)  { animation-delay: 0.18s; }
-    .arch-root > *:nth-child(4)  { animation-delay: 0.22s; }
-    .arch-root > *:nth-child(5)  { animation-delay: 0.26s; }
-    .arch-root > *:nth-child(6)  { animation-delay: 0.30s; }
-    .arch-root > *:nth-child(7)  { animation-delay: 0.34s; }
-    .arch-root > *:nth-child(8)  { animation-delay: 0.38s; }
-    .arch-root > *:nth-child(9)  { animation-delay: 0.42s; }
-    .arch-root > *:nth-child(10) { animation-delay: 0.46s; }
-    .arch-root > *:nth-child(11) { animation-delay: 0.50s; }
-
-    /* ─── Tier labels ─── */
-    .tier-label {
-      font-size: 11px; font-weight: 600; color: #475569;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 0.5rem; padding-left: 2px;
-    }
-    .tier-label strong { font-weight: 800; }
-
-    /* ─── Region grid ─── */
-    .region-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-    .region-box {
-      background: #fff;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 1.1rem 1.15rem;
-      display: flex; flex-direction: column; gap: 0.6rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
-      transition: box-shadow 0.25s ease, transform 0.25s ease;
-    }
-    .region-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-1px); }
-    .region-title { font-size: 12px; font-weight: 600; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.1rem; }
-
-    /* ─── Boxes ─── */
-    .box { border-radius: 8px; padding: 0.5rem 0.75rem; text-align: center; border: 1px solid; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .box:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
-    .box-title { font-size: 12.5px; font-weight: 600; line-height: 1.35; }
-    .box-title strong { font-weight: 800; }
-    .box-sub { font-size: 10.5px; font-weight: 400; margin-top: 2px; line-height: 1.4; }
-
-    .green { background: #DCFCE7; border-color: #86EFAC; }
-    .green .box-title { color: #166534; }
-    .green .box-sub { color: #15803D; }
-
-    .orange { background: #FFEDD5; border-color: #FDBA74; }
-    .orange .box-title { color: #9A3412; }
-    .orange .box-sub { color: #C2410C; }
-    .orange.highlight { border-width: 2px; border-color: #EA580C; box-shadow: 0 0 0 2px rgba(234,88,12,0.10), 0 2px 8px rgba(234,88,12,0.08); }
-
-    .blue { background: #DBEAFE; border-color: #93C5FD; }
-    .blue .box-title { color: #1E3A8A; }
-    .blue .box-sub { color: #1D4ED8; }
-
-    .grey { background: #F3F4F6; border-color: #D1D5DB; }
-    .grey .box-title { color: #374151; }
-    .grey .box-sub { color: #6B7280; }
-
-    /* ─── Grid rows ─── */
-    .box-row { display: grid; gap: 0.65rem; }
-    .box-row-2 { grid-template-columns: 1fr 1fr; }
-    .box-row-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .box-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
-    .full-row-5 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0.65rem; }
-
-    /* ─── Arrows ─── */
-    .down-arrow-center { display: flex; flex-direction: column; align-items: center; padding: 0.1rem 0; gap: 0; }
-    .down-arrow-center .arrow-shaft { width: 1.5px; height: 14px; background: linear-gradient(to bottom, #94A3B8, #64748B); border-radius: 1px; }
-    .down-arrow-center .arrow-tip { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #64748B; }
-
-    .arrow-label {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0.75rem; font-size: 11px; font-weight: 600; color: #475569;
-      letter-spacing: 0.06em; text-transform: uppercase; margin: 0.15rem 0;
-    }
-    .arrow-label::before, .arrow-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, transparent, #CBD5E1, transparent); }
-    .arrow-label strong { font-weight: 800; }
-
-    .section-divider {
-      display: flex; align-items: center; gap: 0.75rem;
-      font-size: 11px; font-weight: 600; color: #475569;
-      letter-spacing: 0.04em; text-transform: uppercase; margin: 0.15rem 0;
-    }
-    .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, transparent, #CBD5E1, transparent); }
-    .section-divider strong { font-weight: 800; }
-
-    /* ─── Tunnel ─── */
-    .tunnel-label {
-      font-size: 11px; font-weight: 500; color: #64748B; text-align: center;
-      padding: 0.3rem 0;
-      border-top: 1px dashed #CBD5E1; border-bottom: 1px dashed #CBD5E1;
-      margin: 0.1rem 0; letter-spacing: 0.04em;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #3B82F6 0%, #10B981 33%, #F59E0B 66%, #6366F1 100%);
     }
 
-    /* ─── ID Tags ─── */
-    .id-tag { font-size: 10.5px; font-weight: 600; text-align: center; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid; letter-spacing: 0.02em; }
-    .id-green { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
-    .id-blue  { background: #DBEAFE; border-color: #93C5FD; color: #1E3A8A; }
+    .hdr-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #F8FAFC;
+      letter-spacing: -0.01em;
+    }
 
-    /* ─── Consent Engine (highlighted domain core) ─── */
-    .consent-block {
-      background: #FFF7ED;
-      border: 2px dashed #EA580C;
-      border-radius: 10px;
-      padding: 0.75rem;
-      box-shadow: 0 0 0 2px rgba(234,88,12,0.07);
+    .hdr-sub {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 2px;
     }
-    .consent-title {
-      font-size: 11px; font-weight: 700; color: #9A3412;
-      margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .domain-badge {
-      font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
-      background: #EA580C; color: #fff; letter-spacing: 0.05em;
-    }
-    .consent-sub { font-size: 10px; color: #C2410C; margin-bottom: 0.5rem; font-weight: 500; }
-    .consent-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 0.5rem; }
-    .ctag {
-      font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid;
-    }
-    .ctag-green  { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
-    .ctag-red    { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
-    .ctag-grey   { background: #F3F4F6; border-color: #D1D5DB; color: #374151; }
 
-    /* ─── Central Router ─── */
-    .central-block {
-      background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.1rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    .hdr-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
     }
-    .central-inner { max-width: 560px; margin: 0 auto; }
 
-    /* ─── Cross-region flow ─── */
-    .flow-row { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
-    .flow-row .box { flex: 1; min-width: 85px; }
-    .flow-arrow { color: #64748B; font-size: 16px; font-weight: 500; display: flex; align-items: center; padding: 0 1px; }
-    .flow-note { font-size: 10.5px; color: #64748B; margin-top: 0.4rem; text-align: center; font-style: italic; }
+    /* Network badges */
+    .net-badges {
+      display: flex;
+      gap: 6px;
+    }
 
-    /* ─── Payer flow ─── */
-    .payer-block {
-      background: #fff;
-      border: 1.5px solid #FDBA74;
-      border-radius: 12px;
-      padding: 1.1rem 1.15rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    .nbadge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
     }
-    .payer-block-title {
-      font-size: 12px; font-weight: 700; color: #9A3412;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      margin-bottom: 0.25rem; display: flex; align-items: center; gap: 8px;
-    }
-    .payer-badge {
-      font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
-      background: #FFEDD5; color: #9A3412; border: 1px solid #FDBA74;
-    }
-    .payer-subtitle { font-size: 10.5px; color: #64748B; margin-bottom: 0.75rem; }
-    .payer-scope { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 0.65rem; }
-    .scope-pill { font-size: 10px; padding: 2px 9px; border-radius: 20px; border: 1px solid; }
-    .scope-allow { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
-    .scope-deny  { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
-    .scope-exp   { background: #DBEAFE; border-color: #93C5FD; color: #1E3A8A; }
 
-    /* ─── Security block ─── */
-    .security-block {
-      background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1rem 1.15rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    .nbadge-in {
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #86EFAC;
     }
-    .security-title { font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.06em; }
-    .security-items { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .security-item {
-      font-size: 10.5px; color: #475569; background: #F8FAFC;
-      border: 1px solid #E2E8F0; border-radius: 6px; padding: 0.25rem 0.55rem;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-    .security-item:hover { background: #EFF6FF; border-color: #BFDBFE; color: #1E3A8A; }
-    .security-item strong { font-weight: 700; }
 
-    /* ─── Agent detail box (left-aligned) ─── */
-    .agent-box {
-      border-radius: 8px; padding: 0.55rem 0.8rem;
-      border: 1px solid; text-align: left;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    .nbadge-out {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D;
+    }
+
+    /* Zoom */
+    .zoom-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 4px 8px;
+    }
+
+    .zbtn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: #CBD5E1;
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-    }
-    .agent-box:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
-    .agent-box-title { font-size: 12px; font-weight: 700; line-height: 1.35; margin-bottom: 2px; }
-    .agent-box-sub { font-size: 10.5px; font-weight: 400; line-height: 1.5; }
-    .agent-box-sub strong { font-weight: 700; }
-
-    /* ─── Animation ─── */
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      transition: background .15s;
     }
 
-    /* ─── Responsive ─── */
-    @media (max-width: 900px) {
-      .region-row { grid-template-columns: 1fr; }
-      .header-band { flex-direction: column; align-items: flex-start; }
-      .full-row-5 { grid-template-columns: 1fr 1fr 1fr; }
+    .zbtn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .zlabel {
+      font-size: 10px;
+      font-weight: 600;
+      color: #94A3B8;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    .zreset {
+      font-size: 10px;
+      color: #64748B;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0 2px;
+    }
+
+    .zreset:hover {
+      color: #CBD5E1;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 500;
+      color: #94A3B8;
+    }
+
+    .leg-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .ld-green {
+      background: #4ADE80;
+    }
+
+    .ld-purple {
+      background: #A78BFA;
+    }
+
+    .ld-amber {
+      background: #FBBF24;
+    }
+
+    .ld-blue {
+      background: #60A5FA;
+    }
+
+    .ld-gray {
+      background: #9CA3AF;
+    }
+
+    /* ── Zoom outer ── */
+    .zoom-outer {
+      flex: 1;
+      overflow: auto;
+      background: #FFFFFF;
+    }
+
+    .zoom-scaler {
+      transform-origin: top center;
+      transition: transform .2s ease;
+    }
+
+    /* ── Canvas ── */
+    .canvas {
+      padding: 1rem;
+      max-width: 1240px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ── Section label ── */
+    .sec-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #9CA3AF;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+      padding-left: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sec-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #F3F4F6;
+    }
+
+    /* ── Connector band ── */
+    .conn-band {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: #9CA3AF;
+      letter-spacing: 0.04em;
+    }
+
+    .conn-band::before,
+    .conn-band::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #F3F4F6;
+    }
+
+    .conn-arrow {
+      color: #D1D5DB;
+      font-size: 12px;
+    }
+
+    /* ── Section wrapper ── */
+    .sec {
+      margin-bottom: 0;
+    }
+
+    /* ── 3-col layout ── */
+    .three-col {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ── Region card ── */
+    .region-card {
+      border-radius: 12px;
+      border: 1px solid #E5E7EB;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #FFFFFF;
+    }
+
+    .region-card.region-a {
+      border-top: 3px solid #4ADE80;
+    }
+
+    .region-card.region-b {
+      border-top: 3px solid #A78BFA;
+    }
+
+    .region-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .region-pip {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pip-a {
+      background: #4ADE80;
+    }
+
+    .pip-b {
+      background: #A78BFA;
+    }
+
+    /* ── Core card (center column) ── */
+    .core-card {
+      border-radius: 12px;
+      border: 1px solid #E5E7EB;
+      padding: 16px;
+      background: #FFFFFF;
+      width: 220px;
+      flex-shrink: 0;
+    }
+
+    .core-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* ── Mini card ── */
+    .mini {
+      border-radius: 8px;
+      border: 1px solid #E5E7EB;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      transition: box-shadow .15s, transform .15s;
+      cursor: default;
+    }
+
+    .mini:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .mini-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111827;
+      line-height: 1.35;
+    }
+
+    .mini-sub {
+      font-size: 10.5px;
+      color: #6B7280;
+      margin-top: 3px;
+      line-height: 1.45;
+    }
+
+    /* color variants */
+    .mini.green {
+      background: #F0FDF4;
+      border-color: #BBF7D0;
+    }
+
+    .mini.green .mini-title {
+      color: #166534;
+    }
+
+    .mini.green .mini-sub {
+      color: #15803D;
+    }
+
+    .mini.purple {
+      background: #FAF5FF;
+      border-color: #E9D5FF;
+    }
+
+    .mini.purple .mini-title {
+      color: #5B21B6;
+    }
+
+    .mini.purple .mini-sub {
+      color: #7C3AED;
+    }
+
+    .mini.amber {
+      background: #FFFBEB;
+      border-color: #FDE68A;
+    }
+
+    .mini.amber .mini-title {
+      color: #78350F;
+    }
+
+    .mini.amber .mini-sub {
+      color: #92400E;
+    }
+
+    .mini.blue {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+    }
+
+    .mini.blue .mini-title {
+      color: #1E3A8A;
+    }
+
+    .mini.blue .mini-sub {
+      color: #1D4ED8;
+    }
+
+    .mini.gray {
+      background: #F9FAFB;
+      border-color: #E5E7EB;
+    }
+
+    .mini.gray .mini-title {
+      color: #374151;
+    }
+
+    .mini.gray .mini-sub {
+      color: #6B7280;
+    }
+
+    .mini.red {
+      background: #FFF1F2;
+      border-color: #FECDD3;
+    }
+
+    .mini.red .mini-title {
+      color: #9F1239;
+    }
+
+    .mini.red .mini-sub {
+      color: #BE123C;
+    }
+
+    /* highlighted border */
+    .mini.ring-amber {
+      border: 2px solid #F59E0B;
+      background: #FFFBEB;
+    }
+
+    .mini.ring-blue {
+      border: 2px solid #3B82F6;
+    }
+
+    .mini.ring-red {
+      border: 2px solid #EF4444;
+    }
+
+    /* ── Agent block ── */
+    .agent-block {
+      border-radius: 8px;
+      border: 1px solid #E5E7EB;
+      overflow: hidden;
+    }
+
+    .agent-header {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1E3A8A;
+      background: #EFF6FF;
+      border-bottom: 1px solid #BFDBFE;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .agent-header .badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: #DBEAFE;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+      letter-spacing: 0.03em;
+    }
+
+    .agent-inner {
+      padding: 10px 12px;
+      background: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ── Consent block ── */
+    .consent-block {
+      border-radius: 8px;
+      border: 2px solid #F59E0B;
+      overflow: hidden;
+      background: #FFFBEB;
+    }
+
+    .consent-header {
+      padding: 8px 12px;
+      background: #FEF3C7;
+      border-bottom: 1px solid #FDE68A;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .consent-header-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #78350F;
+    }
+
+    .consent-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: #F59E0B;
+      color: #fff;
+      letter-spacing: 0.03em;
+    }
+
+    .consent-inner {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .consent-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .ctag {
+      font-size: 9.5px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      border: 1px solid;
+      font-weight: 500;
+    }
+
+    .ctag-g {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+      color: #166534;
+    }
+
+    .ctag-r {
+      background: #FEE2E2;
+      border-color: #FCA5A5;
+      color: #991B1B;
+    }
+
+    .ctag-y {
+      background: #FEF9C3;
+      border-color: #FDE047;
+      color: #713F12;
+    }
+
+    /* ── ID tag ── */
+    .id-tag {
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid;
+      letter-spacing: 0.02em;
+    }
+
+    .id-a {
+      background: #F0FDF4;
+      border-color: #86EFAC;
+      color: #166534;
+    }
+
+    .id-b {
+      background: #FAF5FF;
+      border-color: #E9D5FF;
+      color: #5B21B6;
+    }
+
+    /* ── 2-col grid ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* ── Vertical arrow ── */
+    .v-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2px 0;
+      gap: 0;
+    }
+
+    .v-shaft {
+      width: 1.5px;
+      height: 12px;
+      background: #D1D5DB;
+    }
+
+    .v-tip {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #D1D5DB;
+    }
+
+    /* ── Tunnel strip ── */
+    .tunnel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      gap: 8px;
+      margin: 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: #6B7280;
+      letter-spacing: 0.05em;
+      border-top: 1px dashed #E5E7EB;
+      border-bottom: 1px dashed #E5E7EB;
+    }
+
+    .tunnel-pip {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #D1D5DB;
+    }
+
+    /* ── Full-width blocks ── */
+    .full-card {
+      border-radius: 12px;
+      border: 1px solid #E5E7EB;
+      padding: 16px;
+      background: #FFFFFF;
+    }
+
+    .full-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    /* ── Router card ── */
+    .router-card {
+      border-radius: 12px;
+      border: 2px solid #BFDBFE;
+      padding: 16px;
+      background: #F8FBFF;
+    }
+
+    .router-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1E3A8A;
+      margin-bottom: 4px;
+    }
+
+    .router-sub {
+      font-size: 10.5px;
+      color: #3B82F6;
+      margin-bottom: 12px;
+    }
+
+    /* ── Cross-region flow ── */
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: nowrap;
+    }
+
+    .flow-row .mini {
+      flex: 1;
+      min-width: 0;
+      border-radius: 7px;
+    }
+
+    .flow-arrow-h {
+      color: #9CA3AF;
+      font-size: 13px;
+      flex-shrink: 0;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+    }
+
+    .flow-note {
+      font-size: 10px;
+      color: #9CA3AF;
+      margin-top: 8px;
+      text-align: center;
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    /* ── Payer block ── */
+    .payer-card {
+      border-radius: 12px;
+      border: 2px solid #FDE68A;
+      padding: 16px;
+      background: #FEFCE8;
+    }
+
+    .payer-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #78350F;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .payer-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #F59E0B;
+      color: #fff;
+      letter-spacing: 0.04em;
+    }
+
+    .payer-sub {
+      font-size: 10.5px;
+      color: #92400E;
+      margin-bottom: 12px;
+    }
+
+    .payer-scope {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .scope-pill {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+      font-weight: 500;
+    }
+
+    .sp-allow {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+      color: #166534;
+    }
+
+    .sp-deny {
+      background: #FEE2E2;
+      border-color: #FCA5A5;
+      color: #991B1B;
+    }
+
+    .sp-exp {
+      background: #DBEAFE;
+      border-color: #93C5FD;
+      color: #1E3A8A;
+    }
+
+    /* ── Agent orch ── */
+    .orch-row {
+      display: grid;
+      grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr 20px 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    .orch-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #D1D5DB;
+      font-size: 14px;
+    }
+
+    /* ── OON notice ── */
+    .oon-banner {
+      border-radius: 8px;
+      border: 1px solid #FDE68A;
+      background: #FFFBEB;
+      padding: 8px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .oon-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #F59E0B;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .oon-text {
+      font-size: 10.5px;
+      color: #78350F;
+      line-height: 1.5;
+    }
+
+    .oon-text strong {
+      font-weight: 700;
+      color: #451A03;
+    }
+
+    /* ── Security ── */
+    .sec-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .sec-item {
+      font-size: 10.5px;
+      color: #374151;
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 4px 8px;
+      transition: background .15s;
+    }
+
+    .sec-item:hover {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #1E40AF;
+    }
+
+    .sec-item strong {
+      font-weight: 600;
+    }
+
+    /* ── Portals ── */
+    .portal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .portal-card {
+      border-radius: 10px;
+      border: 1px solid #E5E7EB;
+      padding: 12px;
+      background: #F9FAFB;
+      transition: box-shadow .15s;
+    }
+
+    .portal-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .portal-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .portal-desc {
+      font-size: 10.5px;
+      color: #6B7280;
+      line-height: 1.5;
+    }
+
+    /* ── Network scope bar ── */
+    .network-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #F8FAFC;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
+
+    .net-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .net-sep {
+      color: #E5E7EB;
+    }
+
+    .net-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .np-in {
+      background: #F0FDF4;
+      border-color: #86EFAC;
+      color: #166534;
+    }
+
+    .np-out {
+      background: #FFFBEB;
+      border-color: #FDE68A;
+      color: #78350F;
+    }
+
+    .np-desc {
+      font-size: 10px;
+      color: #9CA3AF;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .canvas>* {
+      animation: fadeUp .4s ease forwards;
+      opacity: 0;
+    }
+
+    .canvas>*:nth-child(1) {
+      animation-delay: .04s;
+    }
+
+    .canvas>*:nth-child(2) {
+      animation-delay: .08s;
+    }
+
+    .canvas>*:nth-child(3) {
+      animation-delay: .12s;
+    }
+
+    .canvas>*:nth-child(4) {
+      animation-delay: .16s;
+    }
+
+    .canvas>*:nth-child(5) {
+      animation-delay: .20s;
+    }
+
+    .canvas>*:nth-child(6) {
+      animation-delay: .24s;
+    }
+
+    .canvas>*:nth-child(7) {
+      animation-delay: .28s;
+    }
+
+    .canvas>*:nth-child(8) {
+      animation-delay: .32s;
+    }
+
+    .canvas>*:nth-child(9) {
+      animation-delay: .36s;
+    }
+
+    .canvas>*:nth-child(10) {
+      animation-delay: .40s;
+    }
+
+    .canvas>*:nth-child(11) {
+      animation-delay: .44s;
+    }
+
+    .canvas>*:nth-child(12) {
+      animation-delay: .48s;
+    }
+
+    .canvas>*:nth-child(13) {
+      animation-delay: .52s;
     }
   </style>
 </head>
+
 <body>
 
-<!-- ═══ HEADER ═══ -->
-<div class="header-band">
-  <div class="header-left">
-    <h1>Healthcare Interoperability — Federated Architecture</h1>
-    <p>Federated · <strong>Consent-first</strong> · <strong>FHIR R4</strong> · Active-active regions · Multi-agent AI orchestration</p>
-  </div>
-  <div class="legend">
-    <div class="legend-item"><div class="legend-swatch swatch-green"></div>Hospital / Edge</div>
-    <div class="legend-item"><div class="legend-swatch swatch-orange"></div>Format Adapter / Consent</div>
-    <div class="legend-item"><div class="legend-swatch swatch-blue"></div>Agents / Router</div>
-    <div class="legend-item"><div class="legend-swatch swatch-grey"></div>Data / Infrastructure</div>
-  </div>
-</div>
-
-<!-- ═══ MAIN CANVAS ═══ -->
-<div class="main-canvas">
-<div class="arch-root">
-
-  <!-- ─── LAYER 0 — PORTALS ─── -->
-  <div>
-    <div class="tier-label"><strong>Layer 0</strong> — Portals · <strong>Angular</strong> · <strong>AWS S3</strong> · <strong>CloudFront</strong> · <strong>Cognito</strong></div>
-    <div class="box-row box-row-3">
-      <div class="box green">
-        <div class="box-title">Patient Portal</div>
-        <div class="box-sub">Grant / revoke <strong>consent</strong> · AI summary · Audit history · Consent clarity UI</div>
+  <!-- ════ HEADER ════ -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">Health Bridge — Federated Architecture</div>
+      <div class="hdr-sub">Multi-region EHR · AI agents · Consent gating · Cross-region routing · In-network &amp;
+        out-of-network handling</div>
+    </div>
+    <div class="hdr-right">
+      <div class="net-badges">
+        <span class="nbadge nbadge-in">IN-NETWORK</span>
+        <span class="nbadge nbadge-out">OUT-OF-NETWORK</span>
       </div>
-      <div class="box orange">
-        <div class="box-title">Hospital Portal</div>
-        <div class="box-sub">Doctor · nurse · lab views · <strong>NPI</strong>-verified access · Role-filtered <strong>FHIR</strong> data · AI emergency brief</div>
+      <div class="zoom-wrap">
+        <button class="zbtn" id="zOut">&#8722;</button>
+        <span class="zlabel" id="zLabel">100%</span>
+        <button class="zbtn" id="zIn">+</button>
+        <button class="zreset" id="zReset">Reset</button>
       </div>
-      <div class="box orange">
-        <div class="box-title">Payer Portal</div>
-        <div class="box-sub"><strong>Prior-auth</strong> decision panel · Direct path → Central Router payer gateway · Explicit <strong>consent</strong> required · Claim dashboard</div>
+      <div class="legend">
+        <div class="leg-item">
+          <div class="leg-dot ld-green"></div>Region A (New England)
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot ld-purple"></div>Region B (Southeast)
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot ld-amber"></div>Consent / Format
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot ld-blue"></div>Agents / Router
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot ld-gray"></div>Data / Infra
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="arrow-label"><strong>HTTPS</strong> · JWT via Cognito → API Gateway</div>
+  <!-- ════ ZOOM OUTER ════ -->
+  <div class="zoom-outer" id="zOuter">
+    <div class="zoom-scaler" id="zScaler">
+      <div class="canvas">
 
-  <!-- ─── LAYER 1 — HOSPITAL EDGE ─── -->
-  <div>
-    <div class="tier-label"><strong>Layer 1</strong> — Hospital Edge · One independent node per hospital · no cross-hospital data sharing</div>
-    <div class="region-row">
-
-      <!-- Region A -->
-      <div class="region-box">
-        <div class="region-title">Region A </div>
-        <div class="box-row box-row-2">
-          <div class="box green">
-            <div class="box-title">Hospital A1</div>
-            <div class="box-sub"><strong>Epic EHR</strong> · <strong>HL7 v2</strong></div>
-          </div>
-          <div class="box green">
-            <div class="box-title">Hospital A2</div>
-            <div class="box-sub"><strong>Cerner</strong> · CSV / JSON</div>
-          </div>
-        </div>
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-        <div class="box orange highlight">
-          <div class="box-title"><strong>Format Adapter A</strong> — FHIR Normalization</div>
-          <div class="box-sub">p_name · field-map · <strong>FHIR R4</strong> · <strong>PPRL</strong> bloom filter encodes PII before leaving hospital boundary</div>
-        </div>
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-        <div class="agent-box blue" onclick="">
-          <div class="agent-box-title" style="color:#1E3A8A">Agent 1 — Ingestion Agent</div>
-          <div class="agent-box-sub" style="color:#1D4ED8"><strong>LangChain</strong> · <strong>AWS Bedrock Claude</strong><br>Structured (HL7 · LOINC · SNOMED) + Unstructured (LLM extracts diagnoses, meds, vitals → FHIR)</div>
-        </div>
-      </div>
-
-      <!-- Region B -->
-      <div class="region-box">
-        <div class="region-title">Region B</div>
-        <div class="box-row box-row-2">
-          <div class="box green">
-            <div class="box-title">Hospital B1</div>
-            <div class="box-sub"><strong>Athenahealth</strong> · PDF</div>
-          </div>
-          <div class="box green">
-            <div class="box-title">Hospital B2</div>
-            <div class="box-sub"><strong>Oracle Health (Cerner)</strong> · HL7 v2</div>
-          </div>
-        </div>
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-        <div class="box orange highlight">
-          <div class="box-title"><strong>Format Adapter B</strong> — FHIR Normalization</div>
-          <div class="box-sub">p_name · field-map · <strong>FHIR R4</strong> · <strong>PPRL</strong> bloom filter encodes PII before leaving hospital boundary</div>
-        </div>
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-        <div class="agent-box blue" onclick="">
-          <div class="agent-box-title" style="color:#1E3A8A">Agent 1 — Ingestion Agent</div>
-          <div class="agent-box-sub" style="color:#1D4ED8"><strong>LangChain</strong> · <strong>AWS Bedrock Claude</strong><br>Scanned PDFs · dictated text · Auto-generates <strong>FHIR</strong> resources · Privacy by design</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="arrow-label"><strong>Validated FHIR R4</strong> + bloom vectors → Regional Servers</div>
-
-  <!-- ─── LAYER 2 — REGIONAL SERVERS ─── -->
-  <div>
-    <div class="tier-label"><strong>Layer 2</strong> — Regional Servers · <strong>AWS ECS Fargate</strong> · <strong>Python FastAPI</strong> · <strong>MongoDB</strong> · one per region</div>
-    <div class="region-row">
-
-      <!-- Regional Server A -->
-      <div class="region-box">
-        <div class="region-title">Regional Server A</div>
-
-        <div class="agent-box grey" onclick="">
-          <div class="agent-box-title" style="color:#374151">Agent 2 — Deduplication <span style="font-weight:400;font-size:10px">(LangGraph stateful)</span></div>
-          <div class="agent-box-sub" style="color:#6B7280">
-            <strong>Deterministic MPI</strong>: SSN hash · insurance ID · CommonWell &nbsp;|&nbsp;
-            <strong>Probabilistic MPI</strong>: DOB scoring · PPRL bloom · composite 0–1
-          </div>
-        </div>
-
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-
-        <div class="consent-block">
-          <div class="consent-title">🔒 Consent Engine — Domain Layer <span class="domain-badge">DOMAIN CORE</span></div>
-          <div class="consent-sub">Every data request routed through this gate — mandatory, cannot be bypassed</div>
-          <div class="box-row box-row-3">
-            <div class="box orange">
-              <div class="box-title"><strong>FHIR Consent Store</strong></div>
-              <div class="box-sub">Grants · purpose · <strong>TREAT/HPAYMT</strong> · scope · expiry · HIPAA compliant · PPRL bloom encoded</div>
+        <!-- ── Layer 0: Portals ── -->
+        <div class="sec">
+          <div class="sec-label">Layer 0 &mdash; Portals &nbsp; Angular · AWS S3 · CloudFront · Cognito</div>
+          <div class="portal-grid">
+            <div class="portal-card">
+              <div class="portal-name">Patient Portal</div>
+              <div class="portal-desc">Grant / revoke consent · AI summary of own records · Consent clarity UI · Audit
+                history</div>
             </div>
-            <div class="box orange">
-              <div class="box-title"><strong>Policy Decision Point</strong></div>
-              <div class="box-sub">Checks grantee · scope · expiry · sensitivity labels — deterministic · auditable</div>
+            <div class="portal-card">
+              <div class="portal-name">Hospital Portal</div>
+              <div class="portal-desc">Doctor · nurse · lab views · NPI-verified access · Role-filtered FHIR data · AI
+                emergency brief</div>
             </div>
-            <div class="box orange">
-              <div class="box-title"><strong>Break-glass Handler</strong></div>
-              <div class="box-sub">ER override · allergies · active meds only · audit before data release · proxy notification</div>
+            <div class="portal-card">
+              <div class="portal-name">Payer Portal</div>
+              <div class="portal-desc">Prior-auth decision panel · Direct path → Central Router payer gateway · Explicit
+                consent required · Claim dashboard</div>
             </div>
           </div>
-          <div class="consent-tags">
-            <span class="ctag ctag-green">TREAT/HPAYMT → auto-allow providers</span>
-            <span class="ctag ctag-red">HPAYMT (payer) → deny unless explicit consent signed</span>
-            <span class="ctag ctag-grey">Break-glass → emergency override + full audit trail</span>
-          </div>
         </div>
 
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
+        <div class="conn-band"><span class="conn-arrow">↓</span> HTTPS · JWT via Cognito → API Gateway → Regional
+          Servers <span class="conn-arrow">↓</span></div>
 
-        <div class="box-row box-row-2">
-          <div class="agent-box blue" onclick="">
-            <div class="agent-box-title" style="color:#1E3A8A">Agent 3 — Prior-auth</div>
-            <div class="agent-box-sub" style="color:#1D4ED8"><strong>LangGraph</strong> + <strong>AWS Strand</strong><br>Policy reader → Evidence extractor → Decision maker · Audit trail</div>
-          </div>
-          <div class="agent-box blue" onclick="">
-            <div class="agent-box-title" style="color:#1E3A8A">Agent 4 — Emergency Summary + Transparency</div>
-            <div class="agent-box-sub" style="color:#1D4ED8"><strong>AWS Bedrock Claude</strong><br>Break-glass trigger · History summariser · Consent transparency (plain English)</div>
-          </div>
-        </div>
+        <!-- ── Layer 1: Hospital Edge ── -->
+        <div class="sec">
+          <div class="sec-label">Layer 1 &mdash; Hospital Edge &nbsp; One independent node per hospital · no
+            cross-hospital data sharing</div>
+          <div class="three-col" style="align-items:stretch;">
 
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-
-        <div class="box grey">
-          <div class="box-title"><strong>Data + Audit Layer</strong></div>
-          <div class="box-sub"><strong>MongoDB</strong> FHIR store · <strong>AWS CloudWatch</strong> · <strong>NPI</strong> verify · 7-year retention · HIPAA compliant</div>
-        </div>
-
-        <div class="id-tag id-green">Patient ID prefix: A-XXXXXXXX</div>
-      </div>
-
-      <!-- Regional Server B -->
-      <div class="region-box">
-        <div class="region-title">Regional Server B</div>
-
-        <div class="agent-box grey" onclick="">
-          <div class="agent-box-title" style="color:#374151">Agent 2 — Deduplication <span style="font-weight:400;font-size:10px">(LangGraph stateful)</span></div>
-          <div class="agent-box-sub" style="color:#6B7280">
-            <strong>Deterministic MPI</strong>: SSN hash · insurance ID · CommonWell &nbsp;|&nbsp;
-            <strong>Probabilistic MPI</strong>: DOB scoring · PPRL bloom · composite 0–1
-          </div>
-        </div>
-
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-
-        <div class="consent-block">
-          <div class="consent-title">🔒 Consent Engine — Domain Layer <span class="domain-badge">DOMAIN CORE</span></div>
-          <div class="consent-sub">Every data request routed through this gate — mandatory, cannot be bypassed</div>
-          <div class="box-row box-row-3">
-            <div class="box orange">
-              <div class="box-title"><strong>FHIR Consent Store</strong></div>
-              <div class="box-sub">Grants · purpose · <strong>TREAT/HPAYMT</strong> · scope · expiry · HIPAA compliant · PPRL bloom encoded</div>
+            <!-- Region A -->
+            <div class="region-card region-a">
+              <div class="region-title"><span class="region-pip pip-a"></span>Region A &mdash; New England</div>
+              <div class="two-col">
+                <div class="mini green">
+                  <div class="mini-title">Hospital A1</div>
+                  <div class="mini-sub">Epic EHR · HL7 v2</div>
+                </div>
+                <div class="mini green">
+                  <div class="mini-title">Hospital A2</div>
+                  <div class="mini-sub">Cerner · CSV / JSON</div>
+                </div>
+              </div>
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+              <div class="mini ring-amber">
+                <div class="mini-title" style="color:#78350F">Format Adapter A — FHIR Normalization</div>
+                <div class="mini-sub" style="color:#92400E">p_name · field-map · FHIR R4 · PPRL bloom filter encodes PII
+                  before leaving hospital boundary</div>
+              </div>
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+              <div class="agent-block">
+                <div class="agent-header">Agent 1 — Ingestion Agent <span class="badge">LangChain</span><span
+                    class="badge" style="background:#EDE9FE;color:#4C1D95;border-color:#DDD6FE">Bedrock Claude</span>
+                </div>
+                <div class="agent-inner">
+                  <div class="mini blue">
+                    <div class="mini-title">Structured mapper</div>
+                    <div class="mini-sub">HL7 · LOINC · SNOMED → FHIR</div>
+                  </div>
+                  <div class="mini blue">
+                    <div class="mini-title">Unstructured extractor</div>
+                    <div class="mini-sub">LLM extracts diagnoses, meds, vitals</div>
+                  </div>
+                  <div class="mini blue">
+                    <div class="mini-title">PPRL encoder</div>
+                    <div class="mini-sub">Privacy-preserving record linkage · bloom vector</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="box orange">
-              <div class="box-title"><strong>Policy Decision Point</strong></div>
-              <div class="box-sub">Checks grantee · scope · expiry · sensitivity labels — deterministic · auditable</div>
+
+            <!-- Center spacer with vertical line -->
+            <div style="display:flex;align-items:center;justify-content:center;min-height:100%;">
+              <div style="width:1px;height:100%;background:#F3F4F6;"></div>
             </div>
-            <div class="box orange">
-              <div class="box-title"><strong>Break-glass Handler</strong></div>
-              <div class="box-sub">ER override · allergies · active meds only · audit before data release · proxy notification</div>
+
+            <!-- Region B -->
+            <div class="region-card region-b">
+              <div class="region-title"><span class="region-pip pip-b"></span>Region B &mdash; Southeast</div>
+              <div class="two-col">
+                <div class="mini purple">
+                  <div class="mini-title">Hospital B1</div>
+                  <div class="mini-sub">Athenahealth · PDF</div>
+                </div>
+                <div class="mini purple">
+                  <div class="mini-title">Hospital B2</div>
+                  <div class="mini-sub">Oracle Health · HL7 v2</div>
+                </div>
+              </div>
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+              <div class="mini ring-amber">
+                <div class="mini-title" style="color:#78350F">Format Adapter B — FHIR Normalization</div>
+                <div class="mini-sub" style="color:#92400E">p_name · field-map · FHIR R4 · PPRL bloom filter encodes PII
+                  before leaving hospital boundary</div>
+              </div>
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+              <div class="agent-block">
+                <div class="agent-header">Agent 1 — Ingestion Agent <span class="badge">LangChain</span><span
+                    class="badge" style="background:#EDE9FE;color:#4C1D95;border-color:#DDD6FE">Bedrock Claude</span>
+                </div>
+                <div class="agent-inner">
+                  <div class="mini blue">
+                    <div class="mini-title">Structured mapper</div>
+                    <div class="mini-sub">HL7 · LOINC · SNOMED → FHIR</div>
+                  </div>
+                  <div class="mini blue">
+                    <div class="mini-title">Unstructured extractor</div>
+                    <div class="mini-sub">Scanned PDFs · dictated text → FHIR</div>
+                  </div>
+                  <div class="mini blue">
+                    <div class="mini-title">PPRL encoder</div>
+                    <div class="mini-sub">Privacy-preserving record linkage · bloom vector</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="conn-band"><span class="conn-arrow">↓</span> Validated FHIR R4 + bloom vectors → Regional Servers
+          <span class="conn-arrow">↓</span>
+        </div>
+
+        <!-- ── Layer 2: Regional Servers ── -->
+        <div class="sec">
+          <div class="sec-label">Layer 2 &mdash; Regional Servers &nbsp; AWS ECS Fargate · Python FastAPI · MongoDB ·
+            one per region</div>
+          <div class="three-col" style="align-items:stretch;">
+
+            <!-- Server A -->
+            <div class="region-card region-a">
+              <div class="region-title"><span class="region-pip pip-a"></span>Regional Server A</div>
+
+              <!-- Dedup -->
+              <div class="agent-block">
+                <div class="agent-header">Agent 2 — Deduplication <span class="badge">LangGraph</span></div>
+                <div class="agent-inner">
+                  <div class="mini gray">
+                    <div class="mini-title">Deterministic MPI</div>
+                    <div class="mini-sub">SSN hash · insurance ID · CommonWell</div>
+                  </div>
+                  <div class="mini gray">
+                    <div class="mini-title">Probabilistic MPI</div>
+                    <div class="mini-sub">DOB scoring · PPRL bloom · composite 0–1</div>
+                  </div>
+                  <div class="mini" style="background:#FFF1F2;border:1px dashed #FECDD3;">
+                    <div class="mini-title" style="color:#9F1239;font-size:11px">Uncertain match → human-in-loop</div>
+                    <div class="mini-sub" style="color:#BE123C">Manual review required before data flows downstream
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <!-- Consent Engine -->
+              <div class="consent-block">
+                <div class="consent-header">
+                  <div class="consent-header-title">Consent SPINE — Domain Layer</div>
+                  <span class="consent-badge">DOMAIN CORE</span>
+                </div>
+                <div class="consent-inner">
+                  <div class="mini amber">
+                    <div class="mini-title">FHIR Consent Store</div>
+                    <div class="mini-sub">Grants · purpose · TREAT/HPAYMT · scope · expiry · HIPAA</div>
+                  </div>
+                  <div class="mini amber">
+                    <div class="mini-title">Policy Decision Point</div>
+                    <div class="mini-sub">Grantee · scope · expiry · sensitivity labels — deterministic</div>
+                  </div>
+                  <div class="mini amber">
+                    <div class="mini-title">Break-glass Handler</div>
+                    <div class="mini-sub">ER override · allergies + active meds only · audit before release</div>
+                  </div>
+                  <div class="consent-tags">
+                    <span class="ctag ctag-g">TREAT/HPAYMT → auto-allow providers</span>
+                    <span class="ctag ctag-r">Payer HPAYMT → deny unless signed</span>
+                    <span class="ctag ctag-y">Break-glass → full audit trail</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <div class="two-col">
+                <div class="agent-block">
+                  <div class="agent-header" style="font-size:11px">Agent 3 — Prior-auth <span
+                      class="badge">Strand</span></div>
+                  <div class="agent-inner">
+                    <div class="mini blue">
+                      <div class="mini-title">Policy reader</div>
+                      <div class="mini-sub">Extract coverage rules</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Evidence extractor</div>
+                      <div class="mini-sub">Clinical evidence → decision</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Audit trail</div>
+                      <div class="mini-sub">Full log on every decision</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-block">
+                  <div class="agent-header" style="font-size:11px">Agent 4 — Emergency</div>
+                  <div class="agent-inner">
+                    <div class="mini blue">
+                      <div class="mini-title">Break-glass trigger</div>
+                      <div class="mini-sub">ER activation protocol</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">History summariser</div>
+                      <div class="mini-sub">GenAI — plain-English summary</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Critical allergies</div>
+                      <div class="mini-sub">Drug interactions · active meds</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <div class="mini gray">
+                <div class="mini-title">Data + Audit Layer</div>
+                <div class="mini-sub">MongoDB FHIR store · CloudWatch · NPI verify · 7-year append-only log · HIPAA
+                </div>
+              </div>
+              <div class="id-tag id-a">Patient ID prefix: A-XXXXXXXX</div>
+            </div>
+
+            <!-- Center: mTLS tunnel -->
+            <div
+              style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:100%;">
+              <div style="width:1px;flex:1;background:#F3F4F6;"></div>
+              <div style="padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                <div style="width:40px;height:1px;background:#D1D5DB;border-top:1px dashed #D1D5DB;"></div>
+                <div
+                  style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:.06em;white-space:nowrap;writing-mode:vertical-lr;transform:rotate(180deg);padding:4px 0;">
+                  mTLS TUNNEL</div>
+                <div style="width:40px;height:1px;background:#D1D5DB;border-top:1px dashed #D1D5DB;"></div>
+              </div>
+              <div style="width:1px;flex:1;background:#F3F4F6;"></div>
+            </div>
+
+            <!-- Server B -->
+            <div class="region-card region-b">
+              <div class="region-title"><span class="region-pip pip-b"></span>Regional Server B</div>
+
+              <div class="agent-block">
+                <div class="agent-header">Agent 2 — Deduplication <span class="badge">LangGraph</span></div>
+                <div class="agent-inner">
+                  <div class="mini gray">
+                    <div class="mini-title">Deterministic MPI</div>
+                    <div class="mini-sub">SSN hash · insurance ID · CommonWell</div>
+                  </div>
+                  <div class="mini gray">
+                    <div class="mini-title">Probabilistic MPI</div>
+                    <div class="mini-sub">DOB scoring · PPRL bloom · composite 0–1</div>
+                  </div>
+                  <div class="mini" style="background:#FFF1F2;border:1px dashed #FECDD3;">
+                    <div class="mini-title" style="color:#9F1239;font-size:11px">Uncertain match → human-in-loop</div>
+                    <div class="mini-sub" style="color:#BE123C">Manual review required before data flows downstream
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <div class="consent-block">
+                <div class="consent-header">
+                  <div class="consent-header-title">Consent SPINE — Domain Layer</div>
+                  <span class="consent-badge">DOMAIN CORE</span>
+                </div>
+                <div class="consent-inner">
+                  <div class="mini amber">
+                    <div class="mini-title">FHIR Consent Store</div>
+                    <div class="mini-sub">Grants · purpose · TREAT/HPAYMT · scope · expiry · HIPAA</div>
+                  </div>
+                  <div class="mini amber">
+                    <div class="mini-title">Policy Decision Point</div>
+                    <div class="mini-sub">Grantee · scope · expiry · sensitivity labels — deterministic</div>
+                  </div>
+                  <div class="mini amber">
+                    <div class="mini-title">Break-glass Handler</div>
+                    <div class="mini-sub">ER override · allergies + active meds only · audit before release</div>
+                  </div>
+                  <div class="consent-tags">
+                    <span class="ctag ctag-g">TREAT/HPAYMT → auto-allow providers</span>
+                    <span class="ctag ctag-r">Payer HPAYMT → deny unless signed</span>
+                    <span class="ctag ctag-y">Break-glass → full audit trail</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <div class="two-col">
+                <div class="agent-block">
+                  <div class="agent-header" style="font-size:11px">Agent 3 — Prior-auth <span
+                      class="badge">Strand</span></div>
+                  <div class="agent-inner">
+                    <div class="mini blue">
+                      <div class="mini-title">Policy reader</div>
+                      <div class="mini-sub">Extract coverage rules</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Evidence extractor</div>
+                      <div class="mini-sub">Clinical evidence → decision</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Audit trail</div>
+                      <div class="mini-sub">Full log on every decision</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-block">
+                  <div class="agent-header" style="font-size:11px">Agent 4 — Emergency</div>
+                  <div class="agent-inner">
+                    <div class="mini blue">
+                      <div class="mini-title">Break-glass trigger</div>
+                      <div class="mini-sub">ER activation protocol</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">History summariser</div>
+                      <div class="mini-sub">GenAI — plain-English summary</div>
+                    </div>
+                    <div class="mini blue">
+                      <div class="mini-title">Critical allergies</div>
+                      <div class="mini-sub">Drug interactions · active meds</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-arrow">
+                <div class="v-shaft"></div>
+                <div class="v-tip"></div>
+              </div>
+
+              <div class="mini gray">
+                <div class="mini-title">Data + Audit Layer</div>
+                <div class="mini-sub">MongoDB FHIR store · CloudWatch · NPI verify · 7-year append-only log · HIPAA
+                </div>
+              </div>
+              <div class="id-tag id-b">Patient ID prefix: B-XXXXXXXX</div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tunnel">
+          <span class="tunnel-pip"></span>
+          Secure mTLS inter-region tunnel — data never stored in transit
+          <span class="tunnel-pip"></span>
+        </div>
+
+        <!-- ── Layer 3: Central Router ── -->
+        <div class="sec">
+          <div class="sec-label">Layer 3 &mdash; Central Router &nbsp; Active-active redundancy · zero data storage ·
+            Payer API Gateway</div>
+          <div class="router-card">
+            <div class="router-title">Central Router — Interoperability Engine</div>
+            <div class="router-sub">Region code inference · cross-region session broker · Payer API Gateway · zero
+              downtime failover · handles in-network and out-of-network requests</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+              <div class="mini blue">
+                <div class="mini-title">ID Parsing</div>
+                <div class="mini-sub">A-XXXX → Region A · B-XXXX → Region B</div>
+              </div>
+              <div class="mini blue">
+                <div class="mini-title">Auth + NPI Check</div>
+                <div class="mini-sub">Verify NPI + JWT before any routing</div>
+              </div>
+              <div class="mini blue">
+                <div class="mini-title">PPRL Cross-region Linker</div>
+                <div class="mini-sub">Same patient 2 regions → linked identity</div>
+              </div>
+              <div class="mini blue">
+                <div class="mini-title">Active-Active Failover</div>
+                <div class="mini-sub">Router pair · CDN failover &lt;30s</div>
+              </div>
             </div>
           </div>
-          <div class="consent-tags">
-            <span class="ctag ctag-green">TREAT/HPAYMT → auto-allow providers</span>
-            <span class="ctag ctag-red">HPAYMT (payer) → deny unless explicit consent signed</span>
-            <span class="ctag ctag-grey">Break-glass → emergency override + full audit trail</span>
+        </div>
+
+        <!-- ── Cross-region flow ── -->
+        <div class="sec">
+          <div class="sec-label">Cross-region request flow &mdash; patient admitted in B, records in A &nbsp;
+            (in-network)</div>
+          <div class="full-card">
+            <div class="flow-row">
+              <div class="mini green">
+                <div class="mini-title">Hospital B</div>
+                <div class="mini-sub">Sends A-XXXX ID</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini blue">
+                <div class="mini-title">Router</div>
+                <div class="mini-sub">Reads "A" prefix → routes</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini amber ring-amber">
+                <div class="mini-title">Auth + Consent</div>
+                <div class="mini-sub">NPI verified · grant checked · scope validated</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini gray">
+                <div class="mini-title">Region A Server</div>
+                <div class="mini-sub">Returns FHIR R4 bundle · AES-256</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini green">
+                <div class="mini-title">Hospital B</div>
+                <div class="mini-sub">Receives data ~12s</div>
+              </div>
+            </div>
+            <div class="flow-note">Router never stores data — brokers the secure mTLS connection only · bidirectional
+              flow</div>
+
+            <!-- Out-of-network banner -->
+            <div class="oon-banner">
+              <div class="oon-dot"></div>
+              <div class="oon-text">
+                <strong>Out-of-network handling:</strong> When a requesting provider is not within the same federated
+                network, the router applies elevated consent verification — requires explicit patient-signed FHIR
+                consent, restricts data scope to encounter + condition + procedure only, enforces mandatory audit log
+                entry, and notifies the patient's proxy if configured. Break-glass out-of-network is permitted only with
+                dual-clinician sign-off and is flagged for compliance review within 24 hours.
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
+        <!-- ── Payer flow ── -->
+        <div class="sec">
+          <div class="sec-label">Payer flow &mdash; insurance claim verification &amp; prior authorisation</div>
+          <div class="payer-card">
+            <div class="payer-title">Payer API Gateway — BCBS &amp; Insurers <span class="payer-badge">SEPARATE ENTRY
+                POINT</span></div>
+            <div class="payer-sub">Payers connect via dedicated Payer API Gateway at the Central Router — not the
+              hospital edge. Org-level JWT auth, standing consent, scoped access, 60-day auto-expiry. Handles both
+              in-network (contracted providers) and out-of-network (non-contracted) claims with differentiated consent
+              requirements.</div>
+            <div class="flow-row">
+              <div class="mini amber">
+                <div class="mini-title">Payer Entry</div>
+                <div class="mini-sub">BCBS → Payer API Gateway · separate from hospital edge</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini blue">
+                <div class="mini-title">Identity Verify</div>
+                <div class="mini-sub">State insurance licence · JWT HPAYMT purpose</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini ring-amber amber">
+                <div class="mini-title">Consent Check</div>
+                <div class="mini-sub">Standing consent · purpose = HPAYMT · scoped</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini gray">
+                <div class="mini-title">Multi-region Fetch</div>
+                <div class="mini-sub">Router queries A + B via mTLS</div>
+              </div>
+              <div class="flow-arrow-h">→</div>
+              <div class="mini green">
+                <div class="mini-title">Claim Approved</div>
+                <div class="mini-sub">Scoped FHIR bundle · ~4 min</div>
+              </div>
+            </div>
+            <div class="payer-scope">
+              <span style="font-size:10.5px;font-weight:600;color:#78350F;padding:2px 0">Payer data scope:</span>
+              <span class="scope-pill sp-allow">✓ Encounter records</span>
+              <span class="scope-pill sp-allow">✓ Condition / diagnosis</span>
+              <span class="scope-pill sp-allow">✓ Procedure (CPT codes)</span>
+              <span class="scope-pill sp-allow">✓ Supporting observations</span>
+              <span class="scope-pill sp-deny">✗ Mental health records</span>
+              <span class="scope-pill sp-deny">✗ Unrelated lab history</span>
+              <span class="scope-pill sp-deny">✗ Billing / internal notes</span>
+              <span class="scope-pill sp-exp">⏱ Auto-expires 60 days post-claim</span>
+            </div>
 
-        <div class="box-row box-row-2">
-          <div class="agent-box blue" onclick="">
-            <div class="agent-box-title" style="color:#1E3A8A">Agent 3 — Prior-auth</div>
-            <div class="agent-box-sub" style="color:#1D4ED8"><strong>LangGraph</strong> + <strong>AWS Strand</strong><br>Policy reader → Evidence extractor → Decision maker · Audit trail</div>
-          </div>
-          <div class="agent-box blue" onclick="">
-            <div class="agent-box-title" style="color:#1E3A8A">Agent 4 — Emergency Summary + Transparency</div>
-            <div class="agent-box-sub" style="color:#1D4ED8"><strong>AWS Bedrock Claude</strong> · <strong>LangChain</strong><br>Break-glass → History summariser → Consent transparency (plain English)</div>
+            <!-- OON payer -->
+            <div class="oon-banner">
+              <div class="oon-dot"></div>
+              <div class="oon-text">
+                <strong>Out-of-network payer claims:</strong> Non-contracted insurers must supply a patient-signed FHIR
+                consent document at request time. Data scope is further restricted — only Encounter and Condition
+                resources are returned. Mental health, substance use, and HIV-related records are always excluded
+                regardless of consent. All OON payer requests are rate-limited to 10/hour per org and flagged for
+                compliance review.
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="down-arrow-center"><div class="arrow-shaft"></div><div class="arrow-tip"></div></div>
-
-        <div class="box grey">
-          <div class="box-title"><strong>Data + Audit Layer</strong></div>
-          <div class="box-sub"><strong>MongoDB</strong> FHIR store · <strong>AWS CloudWatch</strong> · <strong>NPI</strong> verify · 7-year retention · HIPAA compliant</div>
-        </div>
-
-        <div class="id-tag id-blue">Patient ID prefix: B-XXXXXXXX</div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="tunnel-label">Secure <strong>mTLS</strong> tunnel between regions — data never stored in transit</div>
-
-  <!-- ─── LAYER 3 — CENTRAL ROUTER ─── -->
-  <div>
-    <div class="tier-label"><strong>Layer 3</strong> — Central Router · Cross-region broker · <strong>Active-active redundancy</strong></div>
-    <div class="central-block">
-      <div class="central-inner">
-        <div class="box blue" style="margin-bottom:0.75rem;">
-          <div class="box-title"><strong>Central Router</strong> — Interoperability Engine</div>
-          <div class="box-sub">Region code inference · cross-region <strong>session broker</strong> · <strong>Payer API Gateway</strong> · zero downtime failover</div>
-        </div>
-        <div class="box-row box-row-4">
-          <div class="box grey">
-            <div class="box-title">ID Parsing</div>
-            <div class="box-sub">A-20240615-001 → Region A · B-XXXX → Region B</div>
-          </div>
-          <div class="box grey">
-            <div class="box-title">Auth + <strong>NPI</strong> Check</div>
-            <div class="box-sub">Verify requester NPI before routing · no routing without auth</div>
-          </div>
-          <div class="box grey">
-            <div class="box-title"><strong>PPRL</strong> Cross-region Linker</div>
-            <div class="box-sub">Same patient in 2 regions → linked identity · bloom vector match</div>
-          </div>
-          <div class="box grey">
-            <div class="box-title">Active-Active Failover</div>
-            <div class="box-sub">Router pair · health check · CDN failover &lt;30s</div>
+        <!-- ── Agent orchestration ── -->
+        <div class="sec">
+          <div class="sec-label">LangGraph state machine + AWS Strand integration &mdash; agent orchestration</div>
+          <div class="full-card">
+            <div class="orch-row">
+              <div class="mini green">
+                <div class="mini-title">Ingestion</div>
+                <div class="mini-sub">Hospital edge → conversion → dedup</div>
+              </div>
+              <div class="orch-arrow">→</div>
+              <div class="mini gray">
+                <div class="mini-title">Dedup</div>
+                <div class="mini-sub">MPI match · uncertain → human-in-loop</div>
+              </div>
+              <div class="orch-arrow">→</div>
+              <div class="mini ring-amber amber">
+                <div class="mini-title">Consent Gate</div>
+                <div class="mini-sub">Mandatory · cannot be skipped · full audit</div>
+              </div>
+              <div class="orch-arrow">→</div>
+              <div class="mini blue">
+                <div class="mini-title">Prior-Auth</div>
+                <div class="mini-sub">Payer claim · policy decides · extracts evidence</div>
+              </div>
+              <div class="orch-arrow">→</div>
+              <div class="mini blue">
+                <div class="mini-title">Emergency</div>
+                <div class="mini-sub">Break-glass · history · drug interactions</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ─── CROSS-REGION FLOW ─── -->
-  <div>
-    <div class="section-divider">Cross-region request flow — patient admitted in B, records in A</div>
-    <div class="flow-row">
-      <div class="box green"><div class="box-title">Hospital B</div><div class="box-sub">Sends A-XXXX ID</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="box blue"><div class="box-title">Router</div><div class="box-sub">Reads "A" prefix → routes to Region A</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="box orange"><div class="box-title">Auth + <strong>Consent</strong></div><div class="box-sub"><strong>NPI</strong> verified · grant checked · scope validated</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="box grey"><div class="box-title">Region A Server</div><div class="box-sub">Returns <strong>FHIR R4</strong> bundle · AES-256 encrypted</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="box green"><div class="box-title">Hospital B</div><div class="box-sub">Receives data in ~12 seconds</div></div>
-    </div>
-    <div class="flow-note">Router never stores data — brokers the secure mTLS connection only · bidirectional flow</div>
-  </div>
+        <!-- ── Security ── -->
+        <div class="sec">
+          <div class="sec-label">Security &amp; compliance</div>
+          <div class="full-card">
+            <div class="sec-items">
+              <div class="sec-item"><strong>AWS Bedrock</strong> — patient data never trains base model</div>
+              <div class="sec-item"><strong>AES-256</strong> in transit and at rest</div>
+              <div class="sec-item"><strong>HIPAA BAA</strong> on all AWS services</div>
+              <div class="sec-item"><strong>Private VPC</strong> · no public FHIR endpoint</div>
+              <div class="sec-item"><strong>mTLS</strong> all inter-service · TLS 1.3</div>
+              <div class="sec-item">Provenance-based <strong>7-year audit log</strong></div>
+              <div class="sec-item"><strong>FHIR R4</strong> bundle standard</div>
+              <div class="sec-item"><strong>NPI</strong> verified on every request</div>
+              <div class="sec-item"><strong>OON compliance review</strong> flagged within 24h</div>
+              <div class="sec-item"><strong>42 CFR Part 2</strong> — substance use records excluded from OON</div>
+            </div>
+          </div>
+        </div>
 
-  <!-- ─── PAYER FLOW ─── -->
-  <div>
-    <div class="section-divider">Payer flow — insurance claim verification &amp; prior authorisation</div>
-    <div class="payer-block">
-      <div class="payer-block-title">
-        Payer API Gateway — BCBS &amp; Insurers
-        <span class="payer-badge">SEPARATE ENTRY POINT</span>
-      </div>
-      <div class="payer-subtitle">Payers connect via dedicated Payer API Gateway at the Central Router — not the hospital edge. Org-level JWT auth, standing consent, scoped access, 60-day auto-expiry.</div>
+      </div><!-- /canvas -->
+    </div><!-- /zoom-scaler -->
+  </div><!-- /zoom-outer -->
 
-      <div class="flow-row" style="margin-top:0;">
-        <div class="box orange"><div class="box-title">Payer Entry</div><div class="box-sub">BCBS hits <strong>Payer API Gateway</strong> · separate from hospital edge</div></div>
-        <div class="flow-arrow">→</div>
-        <div class="box blue"><div class="box-title">Identity Verify</div><div class="box-sub">State insurance licence · JWT carries <strong>HPAYMT</strong> purpose · org-level auth</div></div>
-        <div class="flow-arrow">→</div>
-        <div class="box orange highlight"><div class="box-title">Consent Check</div><div class="box-sub">Standing consent from enrolment · purpose = <strong>HPAYMT</strong> · Encounter + Condition + Procedure only</div></div>
-        <div class="flow-arrow">→</div>
-        <div class="box grey"><div class="box-title">Multi-region Fetch</div><div class="box-sub">Router queries Region A + B simultaneously via <strong>mTLS</strong></div></div>
-        <div class="flow-arrow">→</div>
-        <div class="box green"><div class="box-title">Claim Approved</div><div class="box-sub">Scoped <strong>FHIR</strong> bundle · diagnosis + CPT confirmed · ~4 min</div></div>
-      </div>
-
-      <div class="payer-scope">
-        <span style="font-size:10.5px;font-weight:600;color:#475569;padding:2px 0">Payer data scope:</span>
-        <span class="scope-pill scope-allow">✓ Encounter records</span>
-        <span class="scope-pill scope-allow">✓ Condition (diagnosis)</span>
-        <span class="scope-pill scope-allow">✓ Procedure (CPT codes)</span>
-        <span class="scope-pill scope-allow">✓ Supporting Observations</span>
-        <span class="scope-pill scope-deny">✗ Mental health records</span>
-        <span class="scope-pill scope-deny">✗ Unrelated lab history</span>
-        <span class="scope-pill scope-deny">✗ Billing / internal notes</span>
-        <span class="scope-pill scope-exp">⏱ Auto-expires 60 days post-claim</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── LANGGRAPH AGENT ORCHESTRATION ─── -->
-  <div>
-    <div class="section-divider"><strong>LangGraph</strong> Agent Orchestration — <strong>AWS Strand</strong> Integration</div>
-    <div class="full-row-5" style="margin-top:0.5rem;">
-      <div class="box green">
-        <div class="box-title">Ingestion</div>
-        <div class="box-sub">Hospital edge → data conversion → dedup agent</div>
-      </div>
-      <div class="box grey">
-        <div class="box-title">Dedup</div>
-        <div class="box-sub"><strong>MPI</strong> match · uncertain → human-in-loop</div>
-      </div>
-      <div class="box orange highlight">
-        <div class="box-title"><strong>Consent Gate</strong></div>
-        <div class="box-sub">Mandatory · cannot be skipped · full audit on every pass</div>
-      </div>
-      <div class="box blue">
-        <div class="box-title"><strong>Prior-Auth</strong></div>
-        <div class="box-sub">Triggered on payer claim · policy decides · extracts evidence</div>
-      </div>
-      <div class="box blue">
-        <div class="box-title">Emergency</div>
-        <div class="box-sub"><strong>Break-glass</strong> trigger · history · flags drug interactions</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── SECURITY + COMPLIANCE ─── -->
-  <div class="security-block">
-    <div class="security-title">Security + Compliance</div>
-    <div class="security-items">
-      <div class="security-item"><strong>AWS Bedrock</strong> — patient data never trains base model</div>
-      <div class="security-item"><strong>AES-256</strong> in transit and at rest</div>
-      <div class="security-item"><strong>HIPAA BAA</strong> on all AWS services</div>
-      <div class="security-item"><strong>Private VPC</strong> · no public FHIR endpoint</div>
-      <div class="security-item"><strong>mTLS</strong> inter-service · TLS 1.3</div>
-      <div class="security-item">Provenance-based <strong>7-year audit log</strong></div>
-      <div class="security-item"><strong>FHIR R4</strong> bundle standard</div>
-      <div class="security-item"><strong>NPI</strong> verified on every request</div>
-    </div>
-  </div>
-
-</div>
-</div>
-
+  <script>
+    var scale = 1, step = 0.1, min = 0.4, max = 1.8;
+    var scaler = document.getElementById('zScaler');
+    var lbl = document.getElementById('zLabel');
+    function applyZ() {
+      scaler.style.transform = 'scale(' + scale + ')';
+      scaler.style.transformOrigin = 'top center';
+      lbl.textContent = Math.round(scale * 100) + '%';
+      scaler.style.marginBottom = scale < 1 ? ((scale - 1) * scaler.offsetHeight) + 'px' : '0';
+    }
+    document.getElementById('zIn').onclick = function () { scale = Math.min(max, +(scale + step).toFixed(1)); applyZ(); };
+    document.getElementById('zOut').onclick = function () { scale = Math.max(min, +(scale - step).toFixed(1)); applyZ(); };
+    document.getElementById('zReset').onclick = function () { scale = 1; applyZ(); };
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === '=') { e.preventDefault(); scale = Math.min(max, +(scale + step).toFixed(1)); applyZ(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); scale = Math.max(min, +(scale - step).toFixed(1)); applyZ(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); scale = 1; applyZ(); }
+    });
+    document.getElementById('zOuter').addEventListener('wheel', function (e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) scale = Math.min(max, +(scale + step).toFixed(1));
+        else scale = Math.max(min, +(scale - step).toFixed(1));
+        applyZ();
+      }
+    }, { passive: false });
+  </script>
 </body>
+
 </html>
